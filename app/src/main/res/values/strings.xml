@@ -24,4 +24,36 @@
     <!-- Home labels -->
     <string name="home_welcome">¡Bienvenido a Aparkau!</string>
     <string name="sign_out">Cerrar sesión</string>
+    <string name="reserve_spot">Reservar plaza</string>
+    <string name="my_reservations">Mis reservas</string>
+    <string name="no_reservations">Todavía no tienes reservas.</string>
+
+    <!-- Reserva labels -->
+    <string name="reservas_title">Reservar plaza</string>
+    <string name="matricula">Matrícula del vehículo</string>
+    <string name="reservar">Reservar</string>
+    <string name="garaje_oficina_title">Reserva garajes oficina</string>
+    <string name="parking_pago_title">Reserva parking de pago</string>
+    <string name="back_to_home">Volver al inicio</string>
+    <string name="select_date">Fecha: %1$s</string>
+    <string name="select_start_time">Inicio: %1$s</string>
+    <string name="select_end_time">Fin: %1$s</string>
+    <string name="reserva_resumen">%1$s · %2$s - %3$s</string>
+    <string name="plaza_numero">Plaza %1$s</string>
+    <string name="no_plazas">No hay plazas disponibles.</string>
+    <string name="reserva_creada">¡Reserva creada correctamente!</string>
+    <string name="matricula_error">Introduce la matrícula del vehículo.</string>
+    <string name="plaza_no_disponible">Esa plaza ya no está disponible.</string>
+    <string name="fecha_pasada_error">No puedes reservar para una fecha pasada.</string>
+    <string name="fecha_max_error">Solo puedes reservar con un máximo de 7 días de antelación.</string>
+    <string name="hora_invalida_error">La hora de fin debe ser posterior a la de inicio.</string>
+    <string name="duracion_error">La reserva no puede durar más de 9 horas.</string>
+    <string name="tipo_normal">Normal</string>
+    <string name="tipo_electrica">Eléctrica</string>
+    <string name="tipo_moto">Moto</string>
+    <string name="tipo_prioritaria">Prioritaria</string>
+    <string name="tipo_tandem">Tándem</string>
+    <string name="estado_libre">Libre</string>
+    <string name="estado_ocupada">Ocupada</string>
+    <string name="estado_bloqueada">Bloqueada por tándem</string>
 </resources>

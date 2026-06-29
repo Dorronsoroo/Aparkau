@@ -12,11 +12,15 @@ enum class EstadoReserva {
 }
 
 enum class TipoPlaza {
-    NORMAL, TANDEM
+    NORMAL, ELECTRICA, MOTO, PRIORITARIA, TANDEM
 }
 
 enum class EstadoPlaza {
     LIBRE, OCUPADA, BLOQUEADA_POR_TANDEM
+}
+
+enum class ZonaPlaza {
+    OFICINA, PAGO
 }
 
 

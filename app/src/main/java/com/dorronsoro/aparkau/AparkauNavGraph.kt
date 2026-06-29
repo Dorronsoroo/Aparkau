@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dorronsoro.aparkau.screen.home.HomeScreen
 import com.dorronsoro.aparkau.screen.login.LoginScreen
+import com.dorronsoro.aparkau.screen.reserva.ReservaScreen
 import com.dorronsoro.aparkau.screen.sign_up.SignUpScreen
 
 @Composable
@@ -23,6 +24,17 @@ fun AparkauNavGraph() {
 
         composable(route = AparkauRoutes.HOME_SCREEN) {
             HomeScreen(
+                openScreen = { route -> navController.navigate(route) },
+                openAndPopUp = { route, popUp ->
+                    navController.navigate(route) {
+                        popUpTo(popUp) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(route = AparkauRoutes.RESERVA_SCREEN) {
+            ReservaScreen(
                 openAndPopUp = { route, popUp ->
                     navController.navigate(route) {
                         popUpTo(popUp) { inclusive = true }
