@@ -12,4 +12,6 @@ object AppText {
     val sign_in = R.string.sign_in
     val forgot_password = R.string.forgot_password
     val recovery_email_sent = R.string.recovery_email_sent
+    val home_welcome = R.string.home_welcome
+    val sign_out = R.string.sign_out
 }

@@ -22,7 +22,13 @@ fun AparkauNavGraph() {
         loginGraph(navController)
 
         composable(route = AparkauRoutes.HOME_SCREEN) {
-            HomeScreen()
+            HomeScreen(
+                openAndPopUp = { route, popUp ->
+                    navController.navigate(route) {
+                        popUpTo(popUp) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }
