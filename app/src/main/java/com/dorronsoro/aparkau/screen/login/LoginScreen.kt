@@ -70,7 +70,8 @@ fun LoginScreen(
             onEmailChange = viewModel::onEmailChange,
             onPasswordChange = viewModel::onPasswordChange,
             onSignInClick = { viewModel.onSignInClick(openAndPopUp) },
-            onForgotPasswordClick = viewModel::onForgotPasswordClick
+            onForgotPasswordClick = viewModel::onForgotPasswordClick,
+            onSignUpClick = { viewModel.onSignUpClick(openAndPopUp) }
         )
     }
 }
@@ -82,7 +83,8 @@ fun LoginScreenContent(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSignInClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit
+    onForgotPasswordClick: () -> Unit,
+    onSignUpClick: () -> Unit = {}
 ) {
     Column(
         modifier = modifier.fillMaxWidth().fillMaxHeight(),
@@ -127,6 +129,12 @@ fun LoginScreenContent(
                 text = AppText.forgot_password,
                 modifier = Modifier.textButton(),
                 action = onForgotPasswordClick
+            )
+
+            BasicTextButton(
+                text = AppText.no_account,
+                modifier = Modifier.textButton(),
+                action = onSignUpClick
             )
         }
     }

@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.dorronsoro.aparkau.R
 import com.dorronsoro.aparkau.common.composable.BasicButton
 import com.dorronsoro.aparkau.common.composable.BasicTextButton
+import com.dorronsoro.aparkau.common.composable.BasicField
 import com.dorronsoro.aparkau.common.composable.EmailField
 import com.dorronsoro.aparkau.common.composable.PasswordField
 import com.dorronsoro.aparkau.common.ext.basicButton
@@ -71,6 +72,8 @@ fun SignUpScreen(
         SignUpScreenContent(
             modifier = Modifier.padding(paddingValues),
             uiState = uiState,
+            onNombreChange = viewModel::onNombreChange,
+            onApellidosChange = viewModel::onApellidosChange,
             onEmailChange = viewModel::onEmailChange,
             onPasswordChange = viewModel::onPasswordChange,
             onRepeatPasswordChange = viewModel::onRepeatPasswordChange,
@@ -84,6 +87,8 @@ fun SignUpScreen(
 fun SignUpScreenContent(
     modifier: Modifier = Modifier,
     uiState: SignUpUiState,
+    onNombreChange: (String) -> Unit,
+    onApellidosChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onRepeatPasswordChange: (String) -> Unit,
@@ -103,6 +108,20 @@ fun SignUpScreenContent(
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        BasicField(
+            value = uiState.nombre,
+            onNewValue = onNombreChange,
+            modifier = Modifier.fieldModifier(),
+            label = R.string.nombre
+        )
+
+        BasicField(
+            value = uiState.apellidos,
+            onNewValue = onApellidosChange,
+            modifier = Modifier.fieldModifier(),
+            label = R.string.apellidos
         )
 
         EmailField(
@@ -148,6 +167,8 @@ fun SignUpScreenPreview() {
     AparkauTheme {
         SignUpScreenContent(
             uiState = SignUpUiState(),
+            onNombreChange = {},
+            onApellidosChange = {},
             onEmailChange = {},
             onPasswordChange = {},
             onRepeatPasswordChange = {},

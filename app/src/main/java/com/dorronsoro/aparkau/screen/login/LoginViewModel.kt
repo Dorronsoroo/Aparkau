@@ -56,4 +56,8 @@ class LoginViewModel @Inject constructor(
             SnackbarManager.showMessage(AppText.recovery_email_sent)
         }
     }
+
+    fun onSignUpClick(openAndPopUp: (String, String) -> Unit) {
+        openAndPopUp(AparkauRoutes.SIGN_UP_SCREEN, AparkauRoutes.LOGIN_SCREEN)
+    }
 }

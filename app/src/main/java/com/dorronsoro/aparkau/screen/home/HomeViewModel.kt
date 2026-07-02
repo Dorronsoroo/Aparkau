@@ -3,6 +3,8 @@ package com.dorronsoro.aparkau.screen.home
 import androidx.compose.runtime.mutableStateOf
 import com.dorronsoro.aparkau.AparkauRoutes
 import com.dorronsoro.aparkau.MakeItSoViewModel
+import com.dorronsoro.aparkau.common.AppText
+import com.dorronsoro.aparkau.common.snackbar.SnackbarManager
 import com.dorronsoro.aparkau.model.service.AccountService
 import com.dorronsoro.aparkau.model.service.LogService
 import com.dorronsoro.aparkau.model.service.ReservaService
@@ -42,10 +44,17 @@ class HomeViewModel @Inject constructor(
         openScreen(AparkauRoutes.RESERVA_SCREEN)
     }
 
-    fun onSignOutClick(openAndPopUp: (String, String) -> Unit) {
+    fun onEliminarReservaClick(reservaId: String) {
         launchCatching {
-            accountService.signOut()
-            openAndPopUp(AparkauRoutes.LOGIN_SCREEN, AparkauRoutes.HOME_SCREEN)
+            reservaService.eliminarReserva(reservaId)
+            uiState.value = uiState.value.copy(
+                reservas = uiState.value.reservas.filterNot { it.id == reservaId }
+            )
+            SnackbarManager.showMessage(AppText.reserva_eliminada)
         }
+    }
+
+    fun onMiCuentaClick(openScreen: (String) -> Unit) {
+        openScreen(AparkauRoutes.MI_CUENTA_SCREEN)
     }
 }

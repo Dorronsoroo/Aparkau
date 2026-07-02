@@ -2,6 +2,7 @@ package com.dorronsoro.aparkau.screen.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,17 +10,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -77,7 +86,8 @@ fun HomeScreen(
             modifier = Modifier.padding(paddingValues),
             uiState = uiState,
             onReserveClick = { viewModel.onReserveClick(openScreen) },
-            onSignOutClick = { viewModel.onSignOutClick(openAndPopUp) }
+            onMiCuentaClick = { viewModel.onMiCuentaClick(openScreen) },
+            onEliminarReservaClick = { viewModel.onEliminarReservaClick(it) }
         )
     }
 }
@@ -87,7 +97,8 @@ fun HomeScreenContent(
     modifier: Modifier = Modifier,
     uiState: HomeUiState,
     onReserveClick: () -> Unit,
-    onSignOutClick: () -> Unit
+    onMiCuentaClick: () -> Unit,
+    onEliminarReservaClick: (String) -> Unit = {}
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -129,7 +140,10 @@ fun HomeScreenContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.reservas, key = { it.id }) { reserva ->
-                    ReservaItem(reserva)
+                    ReservaItem(
+                        reserva = reserva,
+                        onEliminarClick = { onEliminarReservaClick(reserva.id) }
+                    )
                 }
             }
         }
@@ -141,38 +155,79 @@ fun HomeScreenContent(
         )
 
         BasicButton(
-            text = AppText.sign_out,
+            text = AppText.mi_cuenta_title,
             modifier = Modifier.basicButton(),
-            action = onSignOutClick
+            action = onMiCuentaClick
         )
     }
 }
 
 @Composable
-private fun ReservaItem(reserva: Reserva) {
+private fun ReservaItem(
+    reserva: Reserva,
+    onEliminarClick: () -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.plaza_numero, reserva.plazaId),
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = stringResource(
-                    R.string.reserva_resumen,
-                    formatDay(reserva.fechaReserva ?: reserva.horaInicio),
-                    formatTime(reserva.horaInicio),
-                    formatTime(reserva.horaFin)
-                ),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            if (reserva.matriculaVehiculo.isNotBlank()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = reserva.matriculaVehiculo,
-                    style = MaterialTheme.typography.bodySmall
+                    text = stringResource(R.string.plaza_numero, reserva.plazaId),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = stringResource(
+                        R.string.reserva_resumen,
+                        formatDay(reserva.fechaReserva ?: reserva.horaInicio),
+                        formatTime(reserva.horaInicio),
+                        formatTime(reserva.horaFin)
+                    ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                if (reserva.matriculaVehiculo.isNotBlank()) {
+                    Text(
+                        text = reserva.matriculaVehiculo,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            IconButton(onClick = { showDeleteDialog = true }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.eliminar_reserva),
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(text = stringResource(R.string.eliminar_reserva)) },
+            text = { Text(text = stringResource(R.string.eliminar_reserva_confirmacion)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onEliminarClick()
+                    }
+                ) {
+                    Text(text = stringResource(R.string.eliminar))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(text = stringResource(R.string.cancelar))
+                }
+            }
+        )
     }
 }
 
@@ -189,7 +244,7 @@ fun HomeScreenPreview() {
         HomeScreenContent(
             uiState = HomeUiState(userId = "preview-user"),
             onReserveClick = {},
-            onSignOutClick = {}
+            onMiCuentaClick = {}
         )
     }
 }

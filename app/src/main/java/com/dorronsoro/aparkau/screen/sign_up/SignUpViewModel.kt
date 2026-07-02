@@ -25,10 +25,20 @@ class SignUpViewModel @Inject constructor(
     var uiState = mutableStateOf(SignUpUiState())
         private set
 
+    private val nombre get() = uiState.value.nombre
+    private val apellidos get() = uiState.value.apellidos
     private val email get() = uiState.value.email
     private val password get() = uiState.value.password
     private val repeatPassword get() = uiState.value.repeatPassword
     private val perfil get() = uiState.value.perfil
+
+    fun onNombreChange(newValue: String) {
+        uiState.value = uiState.value.copy(nombre = newValue)
+    }
+
+    fun onApellidosChange(newValue: String) {
+        uiState.value = uiState.value.copy(apellidos = newValue)
+    }
 
     fun onEmailChange(newValue: String) {
         uiState.value = uiState.value.copy(email = newValue)
@@ -47,6 +57,14 @@ class SignUpViewModel @Inject constructor(
     }
 
     fun onSignUpClick(openAndPopUp: (String, String) -> Unit) {
+        if (nombre.isBlank()) {
+            SnackbarManager.showMessage(AppText.nombre_error)
+            return
+        }
+        if (apellidos.isBlank()) {
+            SnackbarManager.showMessage(AppText.apellidos_error)
+            return
+        }
         if (!email.isValidEmail()) {
             SnackbarManager.showMessage(AppText.email_error)
             return
@@ -68,6 +86,8 @@ class SignUpViewModel @Inject constructor(
             val uid = accountService.currentUserId
             val resultado = usuarioService.guardarUsuario(
                 uid = uid,
+                nombre = nombre.trim(),
+                apellidos = apellidos.trim(),
                 email = email,
                 perfil = perfil
             )

@@ -3,6 +3,7 @@ package com.dorronsoro.aparkau.model.service.impl
 import com.dorronsoro.aparkau.model.Plaza
 import com.dorronsoro.aparkau.model.service.PlazaService
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -24,7 +25,7 @@ class PlazaServiceImpl @Inject constructor() : PlazaService {
     override suspend fun getTodasLasPlazas(): List<Plaza> {
         return firestore
             .collection(COLECCION_PLAZAS)
-            .get()
+            .get(Source.SERVER)
             .await()
             .toObjects(Plaza::class.java)
     }
@@ -36,7 +37,7 @@ class PlazaServiceImpl @Inject constructor() : PlazaService {
         return firestore
             .collection(COLECCION_PLAZAS)
             .document(plazaId)
-            .get()
+            .get(Source.SERVER)
             .await()
             .toObject(Plaza::class.java)
     }
@@ -52,4 +53,3 @@ class PlazaServiceImpl @Inject constructor() : PlazaService {
             .await()
     }
 }
-

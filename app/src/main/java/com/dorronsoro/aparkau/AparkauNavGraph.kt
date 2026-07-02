@@ -8,6 +8,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dorronsoro.aparkau.screen.home.HomeScreen
 import com.dorronsoro.aparkau.screen.login.LoginScreen
+import com.dorronsoro.aparkau.screen.mi_cuenta.MiCuentaScreen
+import com.dorronsoro.aparkau.screen.mis_coches.MisCochesScreen
 import com.dorronsoro.aparkau.screen.reserva.ReservaScreen
 import com.dorronsoro.aparkau.screen.sign_up.SignUpScreen
 
@@ -17,7 +19,7 @@ fun AparkauNavGraph() {
 
     NavHost(
         navController = navController,
-        startDestination = AparkauRoutes.SIGN_UP_SCREEN
+        startDestination = AparkauRoutes.LOGIN_SCREEN
     ) {
         signUpGraph(navController)
         loginGraph(navController)
@@ -35,6 +37,27 @@ fun AparkauNavGraph() {
 
         composable(route = AparkauRoutes.RESERVA_SCREEN) {
             ReservaScreen(
+                openAndPopUp = { route, popUp ->
+                    navController.navigate(route) {
+                        popUpTo(popUp) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(route = AparkauRoutes.MIS_COCHES_SCREEN) {
+            MisCochesScreen(
+                openAndPopUp = { route, popUp ->
+                    navController.navigate(route) {
+                        popUpTo(popUp) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(route = AparkauRoutes.MI_CUENTA_SCREEN) {
+            MiCuentaScreen(
+                openScreen = { route -> navController.navigate(route) },
                 openAndPopUp = { route, popUp ->
                     navController.navigate(route) {
                         popUpTo(popUp) { inclusive = true }

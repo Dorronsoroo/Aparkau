@@ -13,9 +13,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -24,12 +30,16 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -44,8 +54,10 @@ import com.dorronsoro.aparkau.common.ext.fieldModifier
 import com.dorronsoro.aparkau.common.snackbar.SnackbarManager
 import com.dorronsoro.aparkau.common.snackbar.SnackbarMessage
 import com.dorronsoro.aparkau.model.EstadoPlaza
+import com.dorronsoro.aparkau.model.GrupoPlaza
 import com.dorronsoro.aparkau.model.Plaza
 import com.dorronsoro.aparkau.model.TipoPlaza
+import com.dorronsoro.aparkau.model.Vehiculo
 import com.dorronsoro.aparkau.theme.AparkauTheme
 import kotlinx.coroutines.flow.filterNotNull
 import java.time.LocalDate
@@ -85,7 +97,7 @@ fun ReservaScreen(
         ReservaScreenContent(
             modifier = Modifier.padding(paddingValues),
             uiState = uiState,
-            onMatriculaChange = viewModel::onMatriculaChange,
+            onVehiculoSelected = viewModel::onVehiculoSelected,
             onFechaChange = viewModel::onFechaChange,
             onHoraInicioChange = viewModel::onHoraInicioChange,
             onHoraFinChange = viewModel::onHoraFinChange,
@@ -99,7 +111,7 @@ fun ReservaScreen(
 fun ReservaScreenContent(
     modifier: Modifier = Modifier,
     uiState: ReservaUiState,
-    onMatriculaChange: (String) -> Unit,
+    onVehiculoSelected: (String) -> Unit,
     onFechaChange: (LocalDate) -> Unit,
     onHoraInicioChange: (LocalTime) -> Unit,
     onHoraFinChange: (LocalTime) -> Unit,
@@ -111,13 +123,10 @@ fun ReservaScreenContent(
     Column(modifier = modifier.fillMaxSize()) {
         BasicToolbar(title = AppText.reservas_title)
 
-        OutlinedTextField(
-            value = uiState.matricula,
-            onValueChange = onMatriculaChange,
-            singleLine = true,
-            modifier = Modifier.fieldModifier(),
-            label = { Text(stringResource(R.string.matricula)) },
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters)
+        VehiculoSelector(
+            vehiculos = uiState.vehiculos,
+            matriculaSeleccionada = uiState.matriculaSeleccionada,
+            onVehiculoSelected = onVehiculoSelected
         )
 
         Row(
@@ -206,21 +215,39 @@ fun ReservaScreenContent(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (uiState.plazasOficina.isNotEmpty()) {
+                if (uiState.gruposOficina.isNotEmpty()) {
                     item(key = "header_oficina") {
                         SectionHeader(title = stringResource(R.string.garaje_oficina_title))
                     }
-                    items(uiState.plazasOficina, key = { "of_${it.id}" }) { plaza ->
-                        PlazaItem(plaza = plaza, onReservarClick = onReservarClick)
+                    items(uiState.gruposOficina, key = { grupo ->
+                        when (grupo) {
+                            is GrupoPlaza.Single -> "of_${grupo.plaza.id}"
+                            is GrupoPlaza.Tandem -> "of_tandem_${grupo.plazaA.id}_${grupo.plazaB.id}"
+                        }
+                    }) { grupo ->
+                        GrupoPlazaItem(
+                            grupo = grupo,
+                            ocupantePorPlaza = uiState.ocupantePorPlaza,
+                            onReservarClick = onReservarClick
+                        )
                     }
                 }
 
-                if (uiState.plazasPago.isNotEmpty()) {
+                if (uiState.gruposPago.isNotEmpty()) {
                     item(key = "header_pago") {
                         SectionHeader(title = stringResource(R.string.parking_pago_title))
                     }
-                    items(uiState.plazasPago, key = { "pg_${it.id}" }) { plaza ->
-                        PlazaItem(plaza = plaza, onReservarClick = onReservarClick)
+                    items(uiState.gruposPago, key = { grupo ->
+                        when (grupo) {
+                            is GrupoPlaza.Single -> "pg_${grupo.plaza.id}"
+                            is GrupoPlaza.Tandem -> "pg_tandem_${grupo.plazaA.id}_${grupo.plazaB.id}"
+                        }
+                    }) { grupo ->
+                        GrupoPlazaItem(
+                            grupo = grupo,
+                            ocupantePorPlaza = uiState.ocupantePorPlaza,
+                            onReservarClick = onReservarClick
+                        )
                     }
                 }
             }
@@ -233,6 +260,194 @@ fun ReservaScreenContent(
                 .padding(16.dp)
         ) {
             Text(text = stringResource(R.string.back_to_home))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VehiculoSelector(
+    vehiculos: List<Vehiculo>,
+    matriculaSeleccionada: String,
+    onVehiculoSelected: (String) -> Unit
+) {
+    if (vehiculos.isEmpty()) {
+        Text(
+            text = stringResource(R.string.sin_coches_reserva),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        return
+    }
+
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fieldModifier()
+    ) {
+        OutlinedTextField(
+            value = matriculaSeleccionada,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            label = { Text(stringResource(R.string.selecciona_vehiculo)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            vehiculos.forEach { vehiculo ->
+                DropdownMenuItem(
+                    text = { Text("${vehiculo.matricula} · ${vehiculo.modelo}") },
+                    onClick = {
+                        onVehiculoSelected(vehiculo.matricula)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GrupoPlazaItem(
+    grupo: GrupoPlaza,
+    ocupantePorPlaza: Map<String, String>,
+    onReservarClick: (Plaza) -> Unit
+) {
+    when (grupo) {
+        is GrupoPlaza.Single -> PlazaItem(
+            plaza = grupo.plaza,
+            ocupante = ocupantePorPlaza[grupo.plaza.id],
+            onReservarClick = onReservarClick
+        )
+        is GrupoPlaza.Tandem -> TandemPlazaItem(
+            plazaA = grupo.plazaA,
+            plazaB = grupo.plazaB,
+            ocupantePorPlaza = ocupantePorPlaza,
+            onReservarClick = onReservarClick
+        )
+    }
+}
+
+@Composable
+private fun TandemPlazaItem(
+    plazaA: Plaza,
+    plazaB: Plaza,
+    ocupantePorPlaza: Map<String, String>,
+    onReservarClick: (Plaza) -> Unit
+) {
+    // Extraemos el prefijo numérico común (p. ej. "36" de "36A" y "36B")
+    val prefijo = plazaA.id.trimEnd { !it.isDigit() }
+
+    // Plaza pendiente de confirmar reserva (muestra el diálogo de aviso tándem)
+    var plazaAConfirmar by remember { mutableStateOf<Plaza?>(null) }
+
+    plazaAConfirmar?.let { plaza ->
+        val esPlazaA = plaza.id == plazaA.id
+        val mensaje = if (esPlazaA) {
+            stringResource(R.string.dialog_tandem_a_mensaje, plazaA.id, plazaB.id)
+        } else {
+            stringResource(R.string.dialog_tandem_b_mensaje, plazaB.id, plazaA.id)
+        }
+        AlertDialog(
+            onDismissRequest = { plazaAConfirmar = null },
+            title = { Text(text = stringResource(R.string.dialog_tandem_titulo)) },
+            text = { Text(text = mensaje) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onReservarClick(plaza)
+                    plazaAConfirmar = null
+                }) {
+                    Text(text = stringResource(R.string.dialog_tandem_confirmar))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { plazaAConfirmar = null }) {
+                    Text(text = stringResource(R.string.dialog_cancelar))
+                }
+            }
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.plaza_tandem_grupo, prefijo),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = stringResource(R.string.tipo_tandem),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            androidx.compose.material3.HorizontalDivider()
+
+            listOf(plazaA, plazaB).forEach { plaza ->
+                val subCardColor = when (plaza.estadoEnum) {
+                    EstadoPlaza.LIBRE -> Color(0xFFD4EDDA)
+                    EstadoPlaza.OCUPADA -> Color(0xFFF8D7DA)
+                    EstadoPlaza.BLOQUEADA_POR_TANDEM -> Color(0xFFF8D7DA)
+                }
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = subCardColor)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.plaza_numero, plaza.id),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = estadoTexto(plaza.estadoEnum),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            val ocupante = ocupantePorPlaza[plaza.id]
+                            if (!ocupante.isNullOrBlank()) {
+                                Text(
+                                    text = stringResource(R.string.reservado_por, ocupante),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        if (plaza.estadoEnum == EstadoPlaza.LIBRE) {
+                            Button(onClick = { plazaAConfirmar = plaza }) {
+                                Text(text = stringResource(R.string.reservar))
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -252,9 +467,19 @@ private fun SectionHeader(title: String) {
 @Composable
 private fun PlazaItem(
     plaza: Plaza,
+    ocupante: String?,
     onReservarClick: (Plaza) -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    val cardColor = when (plaza.estadoEnum) {
+        EstadoPlaza.LIBRE -> Color(0xFFD4EDDA)
+        EstadoPlaza.OCUPADA -> Color(0xFFF8D7DA)
+        EstadoPlaza.BLOQUEADA_POR_TANDEM -> Color(0xFFF8D7DA)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = cardColor)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -271,6 +496,13 @@ private fun PlazaItem(
                     text = "${tipoTexto(plaza.tipoEnum)} · ${estadoTexto(plaza.estadoEnum)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
+                if (!ocupante.isNullOrBlank()) {
+                    Text(
+                        text = stringResource(R.string.reservado_por, ocupante),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             if (plaza.estadoEnum == EstadoPlaza.LIBRE) {
@@ -308,11 +540,16 @@ fun ReservaScreenPreview() {
                     Plaza(id = "2", tipo = "NORMAL", estado = "LIBRE"),
                     Plaza(id = "11", tipo = "ELECTRICA", estado = "OCUPADA"),
                     Plaza(id = "200", tipo = "MOTO", estado = "LIBRE"),
-                    Plaza(id = "63", tipo = "NORMAL", estado = "LIBRE")
+                    Plaza(id = "63", tipo = "NORMAL", estado = "LIBRE"),
+                    Plaza(id = "36A", tipo = "TANDEM", estado = "LIBRE", plazaBloqueadaId = "36B"),
+                    Plaza(id = "36B", tipo = "TANDEM", estado = "BLOQUEADA_POR_TANDEM", plazaBloqueadaId = "36A")
                 ),
-                matricula = "1234ABC"
+                vehiculos = listOf(
+                    Vehiculo(matricula = "1234ABC", modelo = "Seat León")
+                ),
+                matriculaSeleccionada = "1234ABC"
             ),
-            onMatriculaChange = {},
+            onVehiculoSelected = {},
             onFechaChange = {},
             onHoraInicioChange = {},
             onHoraFinChange = {},
